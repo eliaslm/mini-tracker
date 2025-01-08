@@ -1,22 +1,16 @@
-import { useState } from 'react'
-import BlurredCard from './BlurredCard'
-import NavBar from './NavBar'
+import { Route, Routes } from "react-router-dom";
+
 import './App.css'
+import IndexPage from "@/pages/index";
+import DummyPage from './pages/dummy';
 
 function App() {
   return (
-    <>
-      <div className='w-full h-full'>
-        <NavBar />
-        <div className='flex w-full h-full justify-center'>
-          <BlurredCard />
-        </div>
-        <div className='flex w-full h-full justify-center'>
-          <BlurredCard />
-        </div>
-      </div>
-    </>
-  )
+    <Routes>
+      <Route element={<IndexPage />} path="/" />
+      <Route element={<DummyPage/>} path="/dummy" />
+    </Routes>
+  );
 }
 
-export default App
+export default App;
