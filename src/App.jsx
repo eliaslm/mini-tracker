@@ -28,11 +28,10 @@ function App() {
   }, [])
 
 
-  console.log(`initial session: ${JSON.stringify(supabaseSession?.user)}`)
   return (
     <Routes>
       <Route element={<IndexPage supabaseClient={supabaseClient} supabaseSession={supabaseSession} />} path="/" />
-      <Route element={<DummyPage />} path="/dummy" />
+      <Route element={<DummyPage supabaseClient={supabaseClient} supabaseSession={supabaseSession} />} path="/dummy" />
     </Routes>
   );
 }
