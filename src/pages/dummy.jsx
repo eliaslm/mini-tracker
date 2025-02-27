@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import users from '@/../users.json';
 import CurrentPlayers from "../components/CurrentPlayers";
 import { MovingAvgLines } from "@/components/MovingAvgLines";
-
+import { DateTimes } from "@/components/DatePicker";
 
 const testUsers = users;
 
@@ -67,7 +67,7 @@ export default function DummyPage({ supabaseClient, supabaseSession }) {
       const entries = userData
         .filter(entry => entry.user_id === user.user_id)
         .sort((a, b) => new Date(a.date) - new Date(b.date));
-      
+
       const movingAverages = [];
       for (let i = 0; i < entries.length; i++) {
         // Calculate average over the window of up to 5 entries ending at i.
@@ -76,7 +76,7 @@ export default function DummyPage({ supabaseClient, supabaseSession }) {
         const sum = windowEntries.reduce((acc, cur) => acc + cur.time, 0);
         const avg = sum / windowEntries.length;
         movingAverages.push({
-          date: entries[i].date, 
+          date: entries[i].date,
           avg: Math.round(avg)
         });
       }
@@ -90,7 +90,7 @@ export default function DummyPage({ supabaseClient, supabaseSession }) {
     const maxPoints = 5;
     const mergedChartData = [];
     for (let i = 0; i < maxPoints; i++) {
-      const pointObj = { point: `T${i-(maxPoints - 1)}` };
+      const pointObj = { point: `T${i - (maxPoints - 1)}` };
       userMovingAverages.forEach((value, userId) => {
         if (value.data[i]) {
           // Use the user's name as key and the computed average as value.
@@ -100,7 +100,6 @@ export default function DummyPage({ supabaseClient, supabaseSession }) {
       mergedChartData.push(pointObj);
     }
     setChartData(mergedChartData);
-    console.log(mergedChartData);
     setLoading(false);
   }
 
@@ -112,6 +111,17 @@ export default function DummyPage({ supabaseClient, supabaseSession }) {
           <AvgTable users={userAverages} isLoading={loading} />
           <MovingAvgLines chartData={chartData} />
         </div>
+
+        {!supabaseSession ? (
+          <div>
+            <h1 className="text-2xl font-serif">Log in to see and update your scores</h1>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-10">
+            <h1 className="text-2xl font-serif">See and update your scores!</h1>
+            <DateTimes supabaseClient={supabaseClient} supabaseSession={supabaseSession}/>
+          </div>
+        )}
 
         <div className="flex flex-col items-center gap-4">
           <h1 className="text-2xl font-serif">Current players</h1>
