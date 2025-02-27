@@ -62,13 +62,13 @@ const ChartStyle = ({
           .map(([theme, prefix]) => `
 ${prefix} [data-chart=${id}] {
 ${colorConfig
-.map(([key, itemConfig]) => {
-const color =
-  itemConfig.theme?.[theme] ||
-  itemConfig.color
-return color ? `  --color-${key}: ${color};` : null
-})
-.join("\n")}
+              .map(([key, itemConfig]) => {
+                const color =
+                  itemConfig.theme?.[theme] ||
+                  itemConfig.color
+                return color ? `  --color-${key}: ${color};` : null
+              })
+              .join("\n")}
 }
 `)
           .join("\n"),
@@ -93,6 +93,7 @@ const ChartTooltipContent = React.forwardRef((
     color,
     nameKey,
     labelKey,
+    valueFormatter,
   },
   ref
 ) => {
@@ -190,15 +191,15 @@ const ChartTooltipContent = React.forwardRef((
                       "flex flex-1 justify-between leading-none",
                       nestLabel ? "items-end" : "items-center"
                     )}>
-                    <div className="grid gap-1.5">
+                    <div className="grid gap-1.5 mr-1.5">
                       {nestLabel ? tooltipLabel : null}
                       <span className="text-muted-foreground">
-                        {itemConfig?.label || item.name}
+                        {`${itemConfig?.label || item.name}`}
                       </span>
                     </div>
                     {item.value && (
                       <span className="font-mono font-medium tabular-nums text-foreground">
-                        {item.value.toLocaleString()}
+                        {valueFormatter ? valueFormatter(item.value) : item.value.toLocaleString()}
                       </span>
                     )}
                   </div>
@@ -273,8 +274,8 @@ function getPayloadConfigFromPayload(
 
   const payloadPayload =
     "payload" in payload &&
-    typeof payload.payload === "object" &&
-    payload.payload !== null
+      typeof payload.payload === "object" &&
+      payload.payload !== null
       ? payload.payload
       : undefined
 
