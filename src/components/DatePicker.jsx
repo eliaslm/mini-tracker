@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
-import { toast } from "@/hooks/use-toast"
+import { Toaster } from "@/components/ui/sonner"
 import { Button } from "@/components/ui/button"
 import {
   Form,
@@ -33,9 +33,26 @@ const FormSchema = z.object({
 });
 
 
+function timeStringToSeconds(timeString) {
+  const parts = timeString.split(":");
+  if (parts.length !== 2) {
+    throw new Error("Invalid time format. Expected (M)M:SS");
+  }
+
+  const minutes = parseInt(parts[0], 10);
+  const seconds = parseInt(parts[1], 10);
+
+  if (isNaN(minutes) || isNaN(seconds) || seconds < 0 || seconds >= 60) {
+    throw new Error("Invalid time values.");
+  }
+
+  return minutes * 60 + seconds;
+}
+
+
 export function MiniTimeForm({ supabaseClient, supabaseSession, selectedDate }) {
 
-  const placeholderMessage = "No entry recorded for date";
+  const placeholderMessage = "No entry for selected date";
   const [dateEntry, setDateEntry] = useState(placeholderMessage);
   const ISODate = selectedDate ? `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}` : "";
 
@@ -67,23 +84,30 @@ export function MiniTimeForm({ supabaseClient, supabaseSession, selectedDate }) 
     },
   })
 
-  function onSubmit(data) {
-    toast({
-      title: "You submitted the following values:",
-      description: (
-        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-        </pre>
-      ),
-    })
+  async function onSubmit(formData) {
+    const timeInSeconds = timeStringToSeconds(formData["timeEntry"]);
+    supabaseClient
+      .from('entries')
+      .upsert({ user_id: supabaseSession.user.id, date: ISODate, time: timeInSeconds })
+      .then(
+        ({ data, error }) => {
+          if (!error) {
+            <Toaster></Toaster>
+            console.log("Success!!!!");
+          } else {
+            console.log(`ERRRRRROR ${JSON.stringify(error)}`);
+          }
+        }
+      )
   }
+
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="w-2/3 space-y-6">
         <FormField
           control={form.control}
-          name="username"
+          name="timeEntry"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Registered score</FormLabel>
