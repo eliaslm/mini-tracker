@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
-import { Toaster } from "@/components/ui/sonner"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import {
   Form,
@@ -51,10 +51,10 @@ function timeStringToSeconds(timeString) {
 
 
 export function MiniTimeForm({ supabaseClient, supabaseSession, selectedDate }) {
-
   const placeholderMessage = "No entry for selected date";
   const [dateEntry, setDateEntry] = useState(placeholderMessage);
   const ISODate = selectedDate ? `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}` : "";
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     supabaseClient
@@ -76,7 +76,6 @@ export function MiniTimeForm({ supabaseClient, supabaseSession, selectedDate }) 
   }, [selectedDate]
   )
 
-
   const form = useForm({
     resolver: zodResolver(FormSchema),
     defaultValues: {
@@ -88,17 +87,25 @@ export function MiniTimeForm({ supabaseClient, supabaseSession, selectedDate }) 
     const timeInSeconds = timeStringToSeconds(formData["timeEntry"]);
     supabaseClient
       .from('entries')
-      .upsert({ user_id: supabaseSession.user.id, date: ISODate, time: timeInSeconds })
+      .upsert({ user_id: supabaseSession.user.id, date: ISODate, time: timeInSeconds, created_at: new Date().toISOString() })
       .then(
         ({ data, error }) => {
           if (!error) {
-            <Toaster></Toaster>
-            console.log("Success!!!!");
+            toast.success(
+              "🎉 Score registered successfully!", {
+              description: `Time ${formData["timeEntry"]} registered for ${ISODate}.` ,
+            }
+            )
           } else {
-            console.log(`ERRRRRROR ${JSON.stringify(error)}`);
+            toast.error(
+              "😭 Error registering score", {
+                description: "Please try again."
+              }
+            )
           }
         }
       )
+    setIsEditing(false);
   }
 
 
@@ -112,7 +119,7 @@ export function MiniTimeForm({ supabaseClient, supabaseSession, selectedDate }) 
             <FormItem>
               <FormLabel>Registered score</FormLabel>
               <FormControl>
-                <Input placeholder={dateEntry} {...field} />
+                <Input disabled={!isEditing} placeholder={dateEntry} {...field} />
               </FormControl>
               <FormDescription>
                 Recorded score for the selected date
@@ -121,7 +128,17 @@ export function MiniTimeForm({ supabaseClient, supabaseSession, selectedDate }) 
             </FormItem>
           )}
         />
-        <Button type="submit">{dateEntry === placeholderMessage ? "Submit score" : "Update score"}</Button>
+        {
+          !isEditing ? (
+            <Button type="button" onClick={() => { setIsEditing(true) }}>{dateEntry === placeholderMessage ? "Enter score" : "Edit score"}</Button>
+          ) :
+            (
+              <div className="flex gap-4">
+                <Button type="submit">{dateEntry === placeholderMessage ? "Submit score" : "Update score"}</Button>
+                <Button type="button" variant="outline" onClick={() => { setIsEditing(false) }}>Cancel</Button>
+              </div>
+            )
+        }
       </form>
     </Form>
   )

@@ -1,4 +1,5 @@
 import NavBar from "@/components/NavBar";
+import { Toaster } from "@/components/ui/sonner";
 
 export default function DefaultLayout({
   children,
@@ -11,6 +12,7 @@ export default function DefaultLayout({
       <main className="container mx-auto px-6 flex-grow pt-16">
         {children}
       </main>
+      <Toaster richColors closeButton/>
     </div>
   );
 }
