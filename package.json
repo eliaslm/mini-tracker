@@ -12,6 +12,7 @@
   "dependencies": {
     "@hookform/resolvers": "^4.1.2",
     "@nextui-org/react": "^2.6.11",
+    "@radix-ui/react-alert-dialog": "^1.1.6",
     "@radix-ui/react-label": "^2.1.2",
     "@radix-ui/react-slot": "^1.1.2",
     "@react-stately/data": "^3.12.1",
