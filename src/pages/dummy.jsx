@@ -1,12 +1,9 @@
 import DefaultLayout from "@/layouts/default";
 import AvgTable from '../components/AvgTable';
 import { useState, useEffect } from "react";
-import users from '@/../users.json';
 import CurrentPlayers from "../components/CurrentPlayers";
 import { MovingAvgLines } from "@/components/MovingAvgLines";
 import { DateTimes } from "@/components/DatePicker";
-
-const testUsers = users;
 
 export default function DummyPage({ supabaseClient, supabaseSession }) {
   const [users, setUsers] = useState([]);
@@ -14,6 +11,7 @@ export default function DummyPage({ supabaseClient, supabaseSession }) {
   const [userAverages, setUserAverages] = useState([]);
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentPlayers, setCurrentPlayers] = useState([]);
 
   useEffect(() => {
     getUsersAndUserData();
@@ -30,7 +28,31 @@ export default function DummyPage({ supabaseClient, supabaseSession }) {
       return;
     }
 
-    setUsers(users);
+    // Get avatar URLs for each user
+    const usersWithAvatars = await Promise.all(
+      users.map(async (user) => {
+        if (user.avatar) {
+          const { data: { publicUrl } } = supabaseClient
+            .storage
+            .from('avatars')
+            .getPublicUrl(user.avatar);
+          return {
+            ...user,
+            profile_picture: publicUrl,
+            name: user.first_name,
+            title: "Mini Player"
+          };
+        }
+        return {
+          ...user,
+          name: user.first_name,
+          title: "Mini Player"
+        };
+      })
+    );
+
+    setUsers(usersWithAvatars);
+    setCurrentPlayers(usersWithAvatars);
     setUserData(userData);
 
     // Compute overall averages for the table.
@@ -85,7 +107,7 @@ export default function DummyPage({ supabaseClient, supabaseSession }) {
       userMovingAverages.set(user.user_id, { name: user.first_name, data: lastFive });
     });
 
-    // Merge all users’ moving averages into a single chartData array.
+    // Merge all users' moving averages into a single chartData array.
     // We use a common x-axis: for simplicity "Entry 1" ... "Entry 5"
     const maxPoints = 5;
     const mergedChartData = [];
@@ -125,7 +147,7 @@ export default function DummyPage({ supabaseClient, supabaseSession }) {
 
         <div className="flex flex-col items-center gap-4">
           <h1 className="text-2xl font-serif">Current players</h1>
-          <CurrentPlayers users={testUsers.users} />
+          <CurrentPlayers users={currentPlayers} />
         </div>
       </div>
     </DefaultLayout>
