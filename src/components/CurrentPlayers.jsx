@@ -1,6 +1,5 @@
 import UserCard from "./UserCard";
 
-
 export default function CurrentPlayers({ users }) {
   return (
     <div>
