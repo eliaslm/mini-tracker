@@ -19,66 +19,64 @@ export const MiniLogo = () => {
 };
 
 
-function UserDetails({ supabaseClient }) {
-  const [userInfo, setUserInfo] = useState({});
+function UserDetails({ supabaseClient, supabaseSession }) {
+  const [profile, setProfile] = useState(null);
+  const [avatarUrl, setAvatarUrl] = useState(null);
 
   useEffect(() => {
-    // Get user info
-    const {
-      data: { subscription },
-    } = supabaseClient.auth.onAuthStateChange((_event, session) => {
-      if (session.user) {
-        supabaseClient
-          .from('profiles')
-          .select()
-          .eq('user_id', session?.user.id)
-          .limit(1)
-          .single()
-          .then(
-            ({ data, error }) => {
-              const { data: { publicUrl } } = supabaseClient
-                .storage
-                .from('avatars')
-                .getPublicUrl(data.avatar)
-
-              setUserInfo(
-                {
-                  first_name: data.first_name,
-                  avatarUrl: publicUrl,
-                }
-              )
-            }
-          )
-      } else {
-        setUserInfo({})
+    async function fetchProfile() {
+      if (!supabaseSession?.user) return;
+      const userId = supabaseSession.user.id;
+      const { data, error } = await supabaseClient
+        .from('profiles')
+        .select('name, avatar')
+        .eq('user_id', userId)
+        .single();
+      if (error) {
+        setProfile(null);
+        setAvatarUrl(null);
+        return;
       }
-    })
+      setProfile(data);
+      // Handle avatar: if it's a URL, use as-is; otherwise, get public URL from storage
+      if (data?.avatar) {
+        if (data.avatar.startsWith('http://') || data.avatar.startsWith('https://')) {
+          setAvatarUrl(data.avatar);
+        } else {
+          const { data: storageData } = supabaseClient
+            .storage
+            .from('avatars')
+            .getPublicUrl(data.avatar);
+          setAvatarUrl(storageData?.publicUrl || null);
+        }
+      } else {
+        setAvatarUrl(null);
+      }
+    }
+    fetchProfile();
+  }, [supabaseSession?.user?.id]);
 
-    return () => subscription.unsubscribe()
-  }, [])
+  if (!profile) return null;
+  const displayName = profile.name || "User";
 
   return (
     <div className="flex gap-4 items-center">
-      <p>👋 Hello, {userInfo.first_name}!</p>
-      {
-        userInfo.avatarUrl && (
-          <>
-            <Dropdown>
-              <DropdownTrigger>
-                <Avatar isBordered src={userInfo?.avatarUrl} />
-              </DropdownTrigger>
-              <DropdownMenu aria-label="Static Actions">
-                <DropdownItem key="delete" className="text-danger" color="danger" onPress={() => { supabaseClient.auth.signOut() }}>
-                  Sign out
-                </DropdownItem>
-              </DropdownMenu>
-            </Dropdown>
-          </>
-        )
-      }
+      <p>👋 Hello, {displayName}!</p>
+      {avatarUrl && (
+        <Dropdown>
+          <DropdownTrigger>
+            <Avatar isBordered src={avatarUrl} />
+          </DropdownTrigger>
+          <DropdownMenu aria-label="Static Actions">
+            <DropdownItem key="delete" className="text-danger" color="danger" onPress={() => { supabaseClient.auth.signOut() }}>
+              Sign out
+            </DropdownItem>
+          </DropdownMenu>
+        </Dropdown>
+      )}
     </div>
   );
-};
+}
 
 
 export default function NavBar({ supabaseClient, supabaseSession }) {
@@ -106,22 +104,12 @@ export default function NavBar({ supabaseClient, supabaseSession }) {
         </NavbarContent>
         <NavbarContent justify="end">
           {!supabaseSession ? (
-            <>
-              <NavbarItem className="hidden lg:flex">
-                <LoginModal supabaseClient={supabaseClient} />
-              </NavbarItem>
-              <NavbarItem>
-                <Button as={Link} color="primary" href="#" variant="flat">
-                  Sign Up
-                </Button>
-              </NavbarItem>
-            </>
-          )
-            :
-            (
-              <UserDetails supabaseClient={supabaseClient} />
-            )
-          }
+            <NavbarItem className="hidden lg:flex">
+              <LoginModal supabaseClient={supabaseClient} />
+            </NavbarItem>
+          ) : (
+            <UserDetails supabaseClient={supabaseClient} supabaseSession={supabaseSession} />
+          )}
         </NavbarContent></NavbarContent>
     </Navbar>
   );

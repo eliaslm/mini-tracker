@@ -31,21 +31,22 @@ export default function DummyPage({ supabaseClient, supabaseSession }) {
     // Get avatar URLs for each user
     const usersWithAvatars = await Promise.all(
       users.map(async (user) => {
+        let profile_picture = null;
         if (user.avatar) {
-          const { data: { publicUrl } } = supabaseClient
-            .storage
-            .from('avatars')
-            .getPublicUrl(user.avatar);
-          return {
-            ...user,
-            profile_picture: publicUrl,
-            name: user.first_name,
-            title: "Mini Player"
-          };
+          if (user.avatar.startsWith('http://') || user.avatar.startsWith('https://')) {
+            profile_picture = user.avatar;
+          } else {
+            const { data: { publicUrl } = {} } = supabaseClient
+              .storage
+              .from('avatars')
+              .getPublicUrl(user.avatar);
+            profile_picture = publicUrl || null;
+          }
         }
         return {
           ...user,
-          name: user.first_name,
+          profile_picture,
+          name: user.name,
           title: "Mini Player"
         };
       })
@@ -73,7 +74,7 @@ export default function DummyPage({ supabaseClient, supabaseSession }) {
       if (user.count > 0) {
         averagesResult.push({
           user_id: user.user_id,
-          name: user.first_name,
+          name: user.name,
           avgTimeSpent: Math.round(user.totalTime / user.count)
         });
       }
@@ -104,7 +105,7 @@ export default function DummyPage({ supabaseClient, supabaseSession }) {
       }
       // Take only the last 5 moving average points (if available)
       const lastFive = movingAverages.slice(-5);
-      userMovingAverages.set(user.user_id, { name: user.first_name, data: lastFive });
+      userMovingAverages.set(user.user_id, { name: user.name, data: lastFive });
     });
 
     // Merge all users' moving averages into a single chartData array.
