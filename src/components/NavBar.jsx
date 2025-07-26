@@ -4,7 +4,9 @@ import { Image } from "@nextui-org/react";
 import { useLocation } from "react-router-dom";
 
 import { LoginModal } from "./LoginModal";
+import { EditProfileModal } from "./EditProfileModal";
 import { useEffect, useState } from "react";
+import { resolveAvatarUrl } from "@/lib/avatar-utils";
 
 export const MiniLogo = () => {
   return (
@@ -22,37 +24,32 @@ export const MiniLogo = () => {
 function UserDetails({ supabaseClient, supabaseSession }) {
   const [profile, setProfile] = useState(null);
   const [avatarUrl, setAvatarUrl] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+
+  const fetchProfile = async () => {
+    if (!supabaseSession?.user) return;
+    const userId = supabaseSession.user.id;
+    const { data, error } = await supabaseClient
+      .from('profiles')
+      .select('name, avatar')
+      .eq('user_id', userId)
+      .single();
+    if (error) {
+      setProfile(null);
+      setAvatarUrl(null);
+      return;
+    }
+    setProfile(data);
+    // Handle avatar using unified utility
+    if (data?.avatar) {
+      const avatarUrl = resolveAvatarUrl(data.avatar, supabaseClient);
+      setAvatarUrl(avatarUrl);
+    } else {
+      setAvatarUrl(null);
+    }
+  };
 
   useEffect(() => {
-    async function fetchProfile() {
-      if (!supabaseSession?.user) return;
-      const userId = supabaseSession.user.id;
-      const { data, error } = await supabaseClient
-        .from('profiles')
-        .select('name, avatar')
-        .eq('user_id', userId)
-        .single();
-      if (error) {
-        setProfile(null);
-        setAvatarUrl(null);
-        return;
-      }
-      setProfile(data);
-      // Handle avatar: if it's a URL, use as-is; otherwise, get public URL from storage
-      if (data?.avatar) {
-        if (data.avatar.startsWith('http://') || data.avatar.startsWith('https://')) {
-          setAvatarUrl(data.avatar);
-        } else {
-          const { data: storageData } = supabaseClient
-            .storage
-            .from('avatars')
-            .getPublicUrl(data.avatar);
-          setAvatarUrl(storageData?.publicUrl || null);
-        }
-      } else {
-        setAvatarUrl(null);
-      }
-    }
     fetchProfile();
   }, [supabaseSession?.user?.id]);
 
@@ -68,12 +65,27 @@ function UserDetails({ supabaseClient, supabaseSession }) {
             <Avatar isBordered src={avatarUrl} />
           </DropdownTrigger>
           <DropdownMenu aria-label="Static Actions">
+            <DropdownItem key="edit-profile" onPress={() => setShowEditModal(true)}>
+              Edit Profile
+            </DropdownItem>
             <DropdownItem key="delete" className="text-danger" color="danger" onPress={() => { supabaseClient.auth.signOut() }}>
               Sign out
             </DropdownItem>
           </DropdownMenu>
         </Dropdown>
       )}
+      
+      {/* Edit Profile Modal */}
+      <EditProfileModal 
+        supabaseClient={supabaseClient} 
+        supabaseSession={supabaseSession}
+        onProfileUpdate={() => {
+          fetchProfile();
+          setShowEditModal(false);
+        }}
+        onClose={showEditModal}
+        onModalClose={() => setShowEditModal(false)}
+      />
     </div>
   );
 }
