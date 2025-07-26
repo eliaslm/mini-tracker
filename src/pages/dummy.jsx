@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import CurrentPlayers from "../components/CurrentPlayers";
 import { MovingAvgLines } from "@/components/MovingAvgLines";
 import { DateTimes } from "@/components/DatePicker";
+import { resolveAvatarUrl } from "@/lib/avatar-utils";
 
 export default function DummyPage({ supabaseClient, supabaseSession }) {
   const [users, setUsers] = useState([]);
@@ -31,18 +32,7 @@ export default function DummyPage({ supabaseClient, supabaseSession }) {
     // Get avatar URLs for each user
     const usersWithAvatars = await Promise.all(
       users.map(async (user) => {
-        let profile_picture = null;
-        if (user.avatar) {
-          if (user.avatar.startsWith('http://') || user.avatar.startsWith('https://')) {
-            profile_picture = user.avatar;
-          } else {
-            const { data: { publicUrl } = {} } = supabaseClient
-              .storage
-              .from('avatars')
-              .getPublicUrl(user.avatar);
-            profile_picture = publicUrl || null;
-          }
-        }
+        const profile_picture = resolveAvatarUrl(user.avatar, supabaseClient);
         return {
           ...user,
           profile_picture,
