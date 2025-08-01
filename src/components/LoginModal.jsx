@@ -5,7 +5,7 @@ export function LoginModal({ supabaseClient }) {
 
   const handleGoogleSignIn = async () => {
     await supabaseClient.auth.signInWithOAuth({ provider: 'google' , options: {
-      redirectTo: "https://eliaslm.github.io/mini-tracker/",
+      redirectTo: import.meta.env.VITE_SUPABASE_REDIRECT_URL || "https://eliaslm.github.io/mini-tracker/",
     },});
   };
 
