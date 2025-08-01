@@ -108,11 +108,6 @@ export default function NavBar({ supabaseClient, supabaseSession }) {
               Home
             </Link>
           </NavbarItem>
-          <NavbarItem isActive={currentPath === "/dummy"}>
-            <Link color="foreground" href="/dummy">
-              Dummy
-            </Link>
-          </NavbarItem>
         </NavbarContent>
         <NavbarContent justify="end">
           {!supabaseSession ? (
