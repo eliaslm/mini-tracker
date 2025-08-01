@@ -62,7 +62,7 @@ export default function AvgTable({ users = [], isLoading }) {
             Name
           </TableColumn>
           <TableColumn key="avgTimeSpent" align="end" allowsSorting>
-            Avgerage Time
+            Average Time
           </TableColumn>
         </TableHeader>
         <TableBody
