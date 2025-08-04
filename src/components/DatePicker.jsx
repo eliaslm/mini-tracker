@@ -155,6 +155,7 @@ export function DateTimes({ supabaseClient, supabaseSession }) {
         selected={date}
         onSelect={setDate}
         disabled={{ after: new Date() }}
+        required={true}
         className="rounded-md border shadow"
       />
       <MiniTimeForm selectedDate={date} supabaseClient={supabaseClient} supabaseSession={supabaseSession} />
