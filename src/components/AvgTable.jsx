@@ -25,7 +25,7 @@ export default function AvgTable({ users = [], isLoading }) {
   });
 
   const sortedUsers = useMemo(() => {
-    return [...users].sort((a, b) => {
+    const sorted = [...users].sort((a, b) => {
       let first = a[sortDescriptor.column];
       let second = b[sortDescriptor.column];
 
@@ -35,6 +35,12 @@ export default function AvgTable({ users = [], isLoading }) {
         second = parseFloat(second);
       }
 
+      // If sorting by name, use the original name (not the display name with medals)
+      if (sortDescriptor.column === "name") {
+        first = a.name;
+        second = b.name;
+      }
+
       let cmp = first < second ? -1 : 1;
       if (sortDescriptor.direction === "descending") {
         cmp *= -1;
@@ -42,7 +48,34 @@ export default function AvgTable({ users = [], isLoading }) {
 
       return cmp;
     });
+
+    // Calculate medal positions based on avgTimeSpent ranking (not current sort order)
+    const avgTimeRanking = [...users].sort((a, b) => {
+      const first = parseFloat(a.avgTimeSpent);
+      const second = parseFloat(b.avgTimeSpent);
+      return first - second; // Ascending order (fastest first)
+    });
+
+    // Create a map of user_id to their avgTimeSpent rank
+    const rankMap = new Map();
+    avgTimeRanking.forEach((user, index) => {
+      rankMap.set(user.user_id, index);
+    });
+
+    // Add index and medal info to each user
+    return sorted.map((user, index) => ({
+      ...user,
+      _index: index,
+      _avgTimeRank: rankMap.get(user.user_id)
+    }));
   }, [users, sortDescriptor]);
+
+  const getMedalEmoji = (avgTimeRank) => {
+    if (avgTimeRank === 0) return "🥇 ";
+    if (avgTimeRank === 1) return "🥈 ";
+    if (avgTimeRank === 2) return "🥉 ";
+    return "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0"; // Three non-breaking spaces for alignment
+  };
 
   return (
     <div className="flex flex-col items-center gap-4">
@@ -74,7 +107,16 @@ export default function AvgTable({ users = [], isLoading }) {
             <TableRow key={item.user_id}>
               {(columnKey) => (
                 <TableCell>
-                  {columnKey === "avgTimeSpent" ? formatTime(item.avgTimeSpent) : getKeyValue(item, columnKey)}
+                  {columnKey === "name" ? (
+                    <span>
+                      {getMedalEmoji(item._avgTimeRank)}
+                      {getKeyValue(item, columnKey)}
+                    </span>
+                  ) : columnKey === "avgTimeSpent" ? (
+                    formatTime(item.avgTimeSpent)
+                  ) : (
+                    getKeyValue(item, columnKey)
+                  )}
                 </TableCell>
               )}
             </TableRow>
